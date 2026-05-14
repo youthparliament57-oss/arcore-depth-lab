@@ -21,6 +21,11 @@ Download the pre-built ARCore Depth Lab app on
 [Google Play Store](https://play.google.com/store/apps/details?id=com.google.ar.unity.arcore_depth_lab)
 today.
 
+The public Android app and this repository is no longer under active maintenance,
+we encourage contributors to look at [XR Blocks](https://github.com/google/xrblocks)
+where we migrated real-time depth-based interaction like [Ballpit](https://xrblocks.github.io/docs/samples/Ballpit/)
+and [Rain](https://xrblocks.github.io/docs/samples/Rain/) to laptops and Android XR devices.
+
 [<img alt="Get ARCore Depth Lab on Google Play" height="50px" src="https://play.google.com/intl/en_us/badges/images/apps/en-play-badge-border.png" />](https://play.google.com/store/apps/details?id=com.google.ar.unity.arcore_depth_lab)
 
 ## Branches
@@ -48,7 +53,7 @@ require
 [**AR Foundation 4.2.0-pre.7**](https://docs.unity3d.com/Packages/com.unity.xr.arfoundation@4.2/manual/index.html)
 or newer,
 [ARCore Extensions](https://developers.google.com/ar/develop/unity-arf) **1.24**
-or newer. The [ARCore Extensions sources](https://github.com/google-ar/arcore-unity-extensions) 
+or newer. The [ARCore Extensions sources](https://github.com/google-ar/arcore-unity-extensions)
 are automatically included via the Unity package manager.
 
 This project only builds with the Build Platform **Android**. Build the project
