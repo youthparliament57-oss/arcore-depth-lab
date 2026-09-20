@@ -32,6 +32,9 @@ fun DepthLabTopBar(
     fps: Int,
     isRawDepth: Boolean,
     envIndex: Int,
+    arSourceMode: com.example.depthlab.data.model.ArSourceMode,
+    isArActive: Boolean,
+    onToggleArSource: () -> Unit,
     onToggleRawDepth: () -> Unit,
     onCycleEnvironment: () -> Unit,
     onOpenInfo: () -> Unit,
@@ -85,31 +88,65 @@ fun DepthLabTopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // Environment switcher chip
+            // Live AR Camera Mode Switcher
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(SurfaceCard)
-                    .border(1.dp, BorderCyanGlow, RoundedCornerShape(8.dp))
-                    .clickable { onCycleEnvironment() }
+                    .background(if (isArActive) SciFiGreen.copy(alpha = 0.2f) else SurfaceCard)
+                    .border(
+                        1.dp,
+                        if (isArActive) SciFiGreen else BorderCyanGlow,
+                        RoundedCornerShape(8.dp)
+                    )
+                    .clickable { onToggleArSource() }
                     .padding(horizontal = 8.dp, vertical = 5.dp)
-                    .testTag("cycle_environment_button"),
+                    .testTag("toggle_ar_source_button"),
                 contentAlignment = Alignment.Center
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.SwapHoriz,
-                        contentDescription = "Switch Environment",
-                        tint = ElectricBlue,
+                        imageVector = Icons.Default.Sensors,
+                        contentDescription = "Toggle AR Camera Source",
+                        tint = if (isArActive) SciFiGreen else TextSecondary,
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = currentEnv.name,
+                        text = if (isArActive) "LIVE AR" else "SIMULATED",
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextPrimary
+                        fontWeight = FontWeight.Bold,
+                        color = if (isArActive) SciFiGreen else TextSecondary
                     )
+                }
+            }
+
+            // Environment switcher chip (active when simulation is running)
+            if (!isArActive) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(SurfaceCard)
+                        .border(1.dp, BorderCyanGlow, RoundedCornerShape(8.dp))
+                        .clickable { onCycleEnvironment() }
+                        .padding(horizontal = 8.dp, vertical = 5.dp)
+                        .testTag("cycle_environment_button"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.SwapHoriz,
+                            contentDescription = "Switch Environment",
+                            tint = ElectricBlue,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = currentEnv.name,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextPrimary
+                        )
+                    }
                 }
             }
 
@@ -137,7 +174,7 @@ fun DepthLabTopBar(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = if (isRawDepth) "Raw Depth" else "Smooth Depth",
+                        text = if (isRawDepth) "Raw" else "Smooth",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = if (isRawDepth) AccentPink else NeonCyan

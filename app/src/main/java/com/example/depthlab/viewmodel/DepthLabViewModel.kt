@@ -21,9 +21,13 @@ class DepthLabViewModel : ViewModel() {
 
     val depthEngine = DepthEngine()
     private val physicsEngine = PhysicsEngine(depthEngine)
+    var realArCoreManager: com.example.depthlab.ar.RealArCoreManager? = null
 
     private val _currentScene = MutableStateFlow(DepthSceneType.ORIENTED_RETICLE)
     val currentScene: StateFlow<DepthSceneType> = _currentScene.asStateFlow()
+
+    private val _arSourceMode = MutableStateFlow(ArSourceMode.REAL_ARCORE)
+    val arSourceMode: StateFlow<ArSourceMode> = _arSourceMode.asStateFlow()
 
     private val _currentFrame = MutableStateFlow(depthEngine.generateDepthFrame(0f))
     val currentFrame: StateFlow<DepthFrame> = _currentFrame.asStateFlow()
@@ -39,6 +43,9 @@ class DepthLabViewModel : ViewModel() {
 
     private val _showInfoDialog = MutableStateFlow(false)
     val showInfoDialog: StateFlow<Boolean> = _showInfoDialog.asStateFlow()
+
+    private val _arStatusMessage = MutableStateFlow<String?>(null)
+    val arStatusMessage: StateFlow<String?> = _arStatusMessage.asStateFlow()
 
     // --- Oriented Reticle State ---
     private val _reticleScreenPos = MutableStateFlow(Pair(0.5f, 0.5f))
@@ -156,8 +163,26 @@ class DepthLabViewModel : ViewModel() {
                     lastFpsTimestamp = now
                 }
 
-                // Generate active depth frame
-                val frame = depthEngine.generateDepthFrame(simulationTime)
+                // Fetch Real AR Depth frame from hardware if available, or generate dynamic frame
+                val arManager = realArCoreManager
+                val realFrame = if (_arSourceMode.value == ArSourceMode.REAL_ARCORE && arManager != null) {
+                    arManager.processCurrentFrame()
+                } else {
+                    null
+                }
+
+                val frame = if (realFrame != null) {
+                    _arStatusMessage.value = "Tracking Real Hardware Depth (${realFrame.width}x${realFrame.height})"
+                    realFrame
+                } else {
+                    if (_arSourceMode.value == ArSourceMode.REAL_ARCORE && arManager?.session != null) {
+                        _arStatusMessage.value = "Calibrating ARCore depth camera..."
+                    } else if (_arSourceMode.value == ArSourceMode.REAL_ARCORE) {
+                        _arStatusMessage.value = "ARCore initializing / preview mode"
+                    }
+                    depthEngine.generateDepthFrame(simulationTime)
+                }
+
                 _currentFrame.value = frame
 
                 // Update reticle metrics
@@ -276,10 +301,20 @@ class DepthLabViewModel : ViewModel() {
         _currentScene.value = scene
     }
 
+    fun toggleArSource() {
+        val nextMode = if (_arSourceMode.value == ArSourceMode.REAL_ARCORE) {
+            ArSourceMode.SIMULATED
+        } else {
+            ArSourceMode.REAL_ARCORE
+        }
+        _arSourceMode.value = nextMode
+    }
+
     fun toggleRawDepth() {
         val next = !_isRawDepth.value
         _isRawDepth.value = next
         depthEngine.isRawDepth = next
+        realArCoreManager?.useRawDepth = next
     }
 
     fun cycleEnvironment() {

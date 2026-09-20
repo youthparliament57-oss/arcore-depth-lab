@@ -110,3 +110,18 @@ data class DepthEnvironment(
     val name: String,
     val description: String
 )
+
+enum class ArSourceMode(val displayName: String) {
+    REAL_ARCORE("Real AR Camera"),
+    SIMULATED("Simulated Space")
+}
+
+data class ArSessionState(
+    val isArCoreSupported: Boolean = false,
+    val isSessionActive: Boolean = false,
+    val isDepthSupported: Boolean = false,
+    val trackingState: String = "INITIALIZING",
+    val errorMessage: String? = null,
+    val cameraWidth: Int = 0,
+    val cameraHeight: Int = 0
+)

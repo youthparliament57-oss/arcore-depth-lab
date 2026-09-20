@@ -1,6 +1,7 @@
 package com.example.depthlab
 
 import android.Manifest
+import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -10,20 +11,34 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.depthlab.ar.RealArCoreManager
+import com.example.depthlab.data.model.ArSourceMode
 import com.example.depthlab.data.model.DepthSceneType
+import com.example.depthlab.ui.components.ArCameraSurfaceView
 import com.example.depthlab.ui.components.DepthLabBottomBar
 import com.example.depthlab.ui.components.DepthLabTopBar
 import com.example.depthlab.ui.components.InfoDialog
 import com.example.depthlab.ui.screens.*
 import com.example.depthlab.ui.theme.DeepNavy
 import com.example.depthlab.ui.theme.DepthLabTheme
+import com.example.depthlab.ui.theme.SciFiGreen
 import com.example.depthlab.viewmodel.DepthLabViewModel
 
 class MainActivity : ComponentActivity() {
@@ -65,6 +80,28 @@ fun DepthLabApp(
         }
     }
 
+    val activity = context as? Activity
+    val arManager = remember {
+        RealArCoreManager(context).also {
+            viewModel.realArCoreManager = it
+        }
+    }
+
+    LaunchedEffect(hasCameraPermission) {
+        if (hasCameraPermission && activity != null) {
+            arManager.checkArCoreAvailability()
+            arManager.startSession(activity)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            arManager.destroy()
+        }
+    }
+
+    val arSourceMode by viewModel.arSourceMode.collectAsState()
+    val arStatusMessage by viewModel.arStatusMessage.collectAsState()
     val currentScene by viewModel.currentScene.collectAsState()
     val currentFrame by viewModel.currentFrame.collectAsState()
     val fps by viewModel.fps.collectAsState()
@@ -122,6 +159,9 @@ fun DepthLabApp(
                 fps = fps,
                 isRawDepth = isRawDepth,
                 envIndex = envIndex,
+                arSourceMode = arSourceMode,
+                isArActive = (arSourceMode == ArSourceMode.REAL_ARCORE),
+                onToggleArSource = { viewModel.toggleArSource() },
                 onToggleRawDepth = { viewModel.toggleRawDepth() },
                 onCycleEnvironment = { viewModel.cycleEnvironment() },
                 onOpenInfo = { viewModel.toggleInfoDialog(true) }
@@ -140,6 +180,17 @@ fun DepthLabApp(
                 .background(DeepNavy)
                 .padding(innerPadding)
         ) {
+            // Live Real-World AR Camera Surface Feed
+            if (arSourceMode == ArSourceMode.REAL_ARCORE && arManager.session != null) {
+                AndroidView(
+                    factory = { ctx ->
+                        ArCameraSurfaceView(ctx).apply {
+                            arManager.session?.let { attachSession(it) }
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
             Crossfade(
                 targetState = currentScene,
                 label = "SceneTransition"
@@ -241,6 +292,30 @@ fun DepthLabApp(
                 InfoDialog(
                     onDismiss = { viewModel.toggleInfoDialog(false) }
                 )
+            }
+
+            // AR status HUD banner
+            arStatusMessage?.let { status ->
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 10.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xCC090D16))
+                        .border(
+                            1.dp,
+                            SciFiGreen.copy(alpha = 0.5f),
+                            RoundedCornerShape(20.dp)
+                        )
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = status,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = SciFiGreen
+                    )
+                }
             }
         }
     }
