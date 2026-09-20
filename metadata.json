@@ -1,0 +1,8 @@
+{
+  "name": "Depth Lab",
+  "description": "ARCore Depth API interactive experiments, 3D reticle, depth mesh collider, point cloud, and avatar locomotion.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
